@@ -12,6 +12,7 @@
 #include "score/staff.h"
 #include "score/playablelength.h"
 #include "score/timesignature.h"
+#include "score/barline.h"
 #include "score/notecheckererror.h"
 
 /*!
@@ -49,14 +50,20 @@ void CANoteChecker::checkSheet(CASheet *sheet) {
 		int lastTimeSigRequiredDuration = static_cast<CATimeSignature*>(timeSigs[lastTimeSigIdx])->barDuration();
 		int lastBarlineTime = -1;
 		for (int j=0; j<barlines.size(); j++) {
+			if (static_cast<CABarline*>(barlines[j])->barlineType()==CABarline::Dotted) {
+				continue;
+			}
+
 			if (((lastTimeSigIdx+1)<timeSigs.size()) && barlines[j]->timeStart()>timeSigs[lastTimeSigIdx]->timeStart() ) {
 				// go to next time sig
 				lastTimeSigIdx++;
 				lastTimeSigRequiredDuration = static_cast<CATimeSignature*>(timeSigs[lastTimeSigIdx])->barDuration();
 			}
 			
-			// check the bar duration
-			if ((lastBarlineTime != -1) && (barlines[j]->timeStart()!=lastBarlineTime+lastTimeSigRequiredDuration)) {
+			// check the bar duration.
+			// If first bar is partial, the length should be shorter or equal to time sig.
+			if ((lastBarlineTime == -1 && barlines[j]->timeStart()>lastTimeSigRequiredDuration) ||
+				(lastBarlineTime != -1 && barlines[j]->timeStart()!=lastBarlineTime+lastTimeSigRequiredDuration)) {
 				CANoteCheckerError *nce = new CANoteCheckerError(barlines[j], QObject::tr("Bar duration incorrect."));
 				sheet->addNoteCheckerError(nce);
 			}

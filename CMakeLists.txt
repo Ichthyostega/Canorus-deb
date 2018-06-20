@@ -5,12 +5,14 @@ PROJECT(Canorus)
 
 # Assume that Debug build is only done by developers -> install in build folder
 # However be aware that this only works in a separate build folder!
+#SET(CMAKE_BUILD_TYPE "Debug")
 IF("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
   SET(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
   SET(CANORUS_DEV_INSTALL True)
 ELSE("${CMAKE_BUILD_TYPE}" MATCHES "Debug") # Release
   IF(${CANORUS_DEV_INSTALL} MATCHES True)
     SET(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
+    SET(QT_NO_DEBUG_OUTPUT)
   ENDIF(${CANORUS_DEV_INSTALL} MATCHES True)
 ENDIF("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
 
@@ -97,7 +99,7 @@ FIND_PACKAGE(Qt5LinguistTools REQUIRED)
 FIND_PACKAGE(Qt5Xml REQUIRED)
 FIND_PACKAGE(Qt5Help REQUIRED)
 FIND_PACKAGE(Qt5PrintSupport REQUIRED)
-FIND_PACKAGE(Qt5WebEngineWidgets REQUIRED)
+FIND_PACKAGE(Qt5WebEngineWidgets)
 
 # in the following lines all the requires include directories are added
 INCLUDE_DIRECTORIES(src)
