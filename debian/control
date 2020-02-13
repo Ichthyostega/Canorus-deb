@@ -34,10 +34,13 @@ Description: graphical music score editor
 
 Package: canorus-data
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, ttf-freefont
+Depends: ${shlibs:Depends}, ${misc:Depends}, fonts-freefont-ttf
 Recommends: canorus
 Suggests: timidity | fluidsynth
 Description: data files for canorus, a graphical music score editor.
- Canorus is a graphical music score editor written for the Qt5 toolkit.
+ Canorus is a graphical music score editor based on LilyPond for rendering.
  .
- This package contains architecture independent data files for canorus.
+ This package contains architecture independent data files for canorus,
+ especially the fonts and glyphs necessary for rendering the generated score.
+ Moreover, this package installs the usermanual, which can be launched from
+ the application's help menu.
