@@ -8,10 +8,10 @@ Examples are covered by debhelper
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index a31bcc7..2f097e6 100644
+index 1bf4335..e0090e1 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -764,7 +764,7 @@ INSTALL(CODE "FILE(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CANORUS_INSTALL_DATA
+@@ -783,7 +783,7 @@ INSTALL(CODE "FILE(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CANORUS_INSTALL_DATA
  FILE(GLOB Canorus_Usersguide RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ../doc/usersguide/*.qhc ../doc/usersguide/*.qch)
  INSTALL(FILES ${Canorus_Usersguide} DESTINATION "${CMAKE_INSTALL_PREFIX}/${CANORUS_INSTALL_DATA_DIR}/doc/usersguide")
  # Install examples

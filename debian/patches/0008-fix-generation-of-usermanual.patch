@@ -10,18 +10,15 @@ Subject: fix generation of usermanual
 NOTE: no rule in CMake to build the new usersguide2 with python/sphinx
       Instead, there is a hand written Makefile, thus we need to invoke
       that directly from debian/rules (using the override mechanism of dh)
-
-
-nazi
 ---
  src/CMakeLists.txt | 15 +++++++++++----
  1 file changed, 11 insertions(+), 4 deletions(-)
 
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index c35de15..5c8741e 100644
+index 75a3d14..8b4b155 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -759,10 +759,17 @@ INSTALL(FILES ${Canorus_Translation_Bins} DESTINATION "${CMAKE_INSTALL_PREFIX}/$
+@@ -778,10 +778,17 @@ INSTALL(FILES ${Canorus_Translation_Bins} DESTINATION "${CMAKE_INSTALL_PREFIX}/$
  # Install fonts
  INSTALL(FILES ${Canorus_Fonts} DESTINATION "${CMAKE_INSTALL_PREFIX}/${CANORUS_INSTALL_DATA_DIR}/fonts")
  # Install users manual, if it exists

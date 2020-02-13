@@ -8,10 +8,9 @@ During the compilation, these warnings are treated as errors.
  src/layout/drawablefunctionmark.cpp | 4 ++--
  src/score/interval.cpp              | 2 +-
  src/score/playablelength.cpp        | 2 +-
- src/ui/mainwin.cpp                  | 6 +++---
  src/widgets/actionseditor.cpp       | 2 +-
  src/widgets/sourceview.cpp          | 4 ++--
- 7 files changed, 11 insertions(+), 11 deletions(-)
+ 6 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/src/import/musicxmlimport.cpp b/src/import/musicxmlimport.cpp
 index 4324b45..8ea8710 100644
@@ -27,7 +26,7 @@ index 4324b45..8ea8710 100644
  				else if (sign=="F") t=CAClef::Bass;
  
 diff --git a/src/layout/drawablefunctionmark.cpp b/src/layout/drawablefunctionmark.cpp
-index d57ab50..4895e44 100644
+index d57ab50..38bb7e2 100644
 --- a/src/layout/drawablefunctionmark.cpp
 +++ b/src/layout/drawablefunctionmark.cpp
 @@ -260,8 +260,8 @@ CADrawableFunctionMarkSupport::~CADrawableFunctionMarkSupport() {
@@ -36,7 +35,7 @@ index d57ab50..4895e44 100644
  	QString text;
 -	CAFunctionMark::CAFunctionType type;
 -	bool minor;
-+	CAFunctionMark::CAFunctionType type = _function1->functionMark()->chordArea();;
++	CAFunctionMark::CAFunctionType type = _function1->functionMark()->chordArea();
 +	bool minor = false;
  
  	//prepare drawing stuff
@@ -67,37 +66,6 @@ index fc7ba15..26e2a0a 100644
  	bool findNote = true;
  	while (workTime && (currentTime >= musicLengthToTimeLength( HundredTwentyEighth ))) {
  
-diff --git a/src/ui/mainwin.cpp b/src/ui/mainwin.cpp
-index d91bbf9..3d308a5 100644
---- a/src/ui/mainwin.cpp
-+++ b/src/ui/mainwin.cpp
-@@ -1774,7 +1774,7 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
- 			// Insert context
- 			if (uiContextType->isChecked()) {
- 				// Add new Context
--				CAContext *newContext;
-+				CAContext *newContext = NULL;
- 				CADrawableContext *dupContext = v->nearestUpContext(coords.x(), coords.y());
- 				switch(uiContextType->currentId()) {
- 					case CAContext::Staff: {
-@@ -2582,7 +2582,7 @@ bool CAMainWin::insertMusElementAt(const QPoint coords, CAScoreView *v) {
- 				// same code for the Rest insertion
- 
- 				CATuplet *tuplet = static_cast<CAPlayable*>(left->musElement())->tuplet();
--				QList<CAPlayable*> noteList; int number; int actualNumber;
-+				QList<CAPlayable*> noteList; int number = 0; int actualNumber = 0;
- 				if ( tuplet  ) {
- 					noteList = tuplet->noteList();
- 					number = tuplet->number();
-@@ -2680,7 +2680,7 @@ bool CAMainWin::insertMusElementAt(const QPoint coords, CAScoreView *v) {
- 				// same code for the Note insertion
- 
- 				CATuplet *tuplet = static_cast<CAPlayable*>(left->musElement())->tuplet();
--				QList<CAPlayable*> noteList; int number; int actualNumber;
-+				QList<CAPlayable*> noteList; int number = 0; int actualNumber = 0;
- 				if ( tuplet  ) {
- 					noteList = tuplet->noteList();
- 					number = tuplet->number();
 diff --git a/src/widgets/actionseditor.cpp b/src/widgets/actionseditor.cpp
 index 1fb7338..aacebb6 100644
 --- a/src/widgets/actionseditor.cpp
@@ -112,7 +80,7 @@ index 1fb7338..aacebb6 100644
      QFile f( filename );
      if ( f.open( QIODevice::ReadOnly ) ) {
 diff --git a/src/widgets/sourceview.cpp b/src/widgets/sourceview.cpp
-index 33829ea..6ee4d71 100644
+index 33829ea..60c4974 100644
 --- a/src/widgets/sourceview.cpp
 +++ b/src/widgets/sourceview.cpp
 @@ -119,7 +119,7 @@ void CASourceView::on_commit_clicked() {
@@ -120,7 +88,7 @@ index 33829ea..6ee4d71 100644
  
  CASourceView *CASourceView::clone() {
 -	CASourceView *v;
-+	CASourceView *v = NULL;
++	CASourceView *v = nullptr;
  	if ( document() )
  		v = new CASourceView( document(), static_cast<QWidget*>(parent()) );
  	else if ( voice() )
@@ -129,7 +97,7 @@ index 33829ea..6ee4d71 100644
  
  CASourceView *CASourceView::clone(QWidget *parent) {
 -	CASourceView *v;
-+	CASourceView *v = NULL;
++	CASourceView *v = nullptr;
  	if ( document() )
  		v = new CASourceView( document(), parent );
  	else if ( voice() )
