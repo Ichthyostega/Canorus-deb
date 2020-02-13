@@ -23,7 +23,16 @@
   </property>
   <widget class="QWidget" name="uiCentralWidget">
    <layout class="QGridLayout">
-    <property name="margin">
+    <property name="leftMargin">
+     <number>6</number>
+    </property>
+    <property name="topMargin">
+     <number>6</number>
+    </property>
+    <property name="rightMargin">
+     <number>6</number>
+    </property>
+    <property name="bottomMargin">
      <number>6</number>
     </property>
     <property name="spacing">
@@ -53,7 +62,7 @@
      <x>0</x>
      <y>0</y>
      <width>905</width>
-     <height>26</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="uiMenuEdit">
@@ -74,7 +83,7 @@
     <property name="title">
      <string>&amp;Tools</string>
     </property>
-    <addaction name="uiGotoBar"/>
+    <addaction name="uiJumpTo"/>
     <addaction name="uiTranspose"/>
     <addaction name="uiNoteCount"/>
     <addaction name="uiMidiRecorder"/>
@@ -83,7 +92,7 @@
    </widget>
    <widget class="QMenu" name="uiMenuWindow">
     <property name="title">
-     <string>Window</string>
+     <string>&amp;Window</string>
     </property>
     <addaction name="uiNewView"/>
     <addaction name="uiNewWindow"/>
@@ -140,7 +149,7 @@
     </property>
     <widget class="QMenu" name="uiMenuZoom">
      <property name="title">
-      <string>Zoom</string>
+      <string>&amp;Zoom</string>
      </property>
      <addaction name="uiZoomToWidth"/>
      <addaction name="uiZoomToHeight"/>
@@ -151,7 +160,7 @@
     </widget>
     <widget class="QMenu" name="uiMenuSourceView">
      <property name="title">
-      <string>Source view</string>
+      <string>&amp;Source view</string>
      </property>
      <addaction name="uiLilyPondSource"/>
      <addaction name="uiCanorusMLSource"/>
@@ -428,23 +437,20 @@
   </action>
   <action name="uiInvertSelection">
    <property name="text">
-    <string>Invert Selection</string>
+    <string>&amp;Invert Selection</string>
    </property>
   </action>
   <action name="uiZoomToWidth">
    <property name="text">
-    <string>Fit to width</string>
+    <string>Fit to &amp;width</string>
    </property>
   </action>
-  <action name="uiGotoBar">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
+  <action name="uiJumpTo">
    <property name="text">
-    <string>Goto bar...</string>
+    <string>&amp;Jump to...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+G</string>
+    <string>Ctrl+J</string>
    </property>
   </action>
   <action name="uiShowStatusBar">
@@ -455,7 +461,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>St&amp;atus bar</string>
+    <string>Status &amp;bar</string>
    </property>
   </action>
   <action name="uiFullscreen">
@@ -503,7 +509,7 @@
      <normaloff>images:barline/barlinesingle.svg</normaloff>images:barline/barlinesingle.svg</iconset>
    </property>
    <property name="text">
-    <string>Barline...</string>
+    <string>&amp;Barline...</string>
    </property>
   </action>
   <action name="uiNoteCount">
@@ -525,7 +531,7 @@
   </action>
   <action name="uiUsersGuide">
    <property name="text">
-    <string>User's guide...</string>
+    <string>&amp;User's guide...</string>
    </property>
   </action>
   <action name="uiWhatsThis">
@@ -567,12 +573,12 @@
   </action>
   <action name="uiSplitHorizontally">
    <property name="text">
-    <string>Split view horizontally</string>
+    <string>Split view &amp;horizontally</string>
    </property>
   </action>
   <action name="uiSplitVertically">
    <property name="text">
-    <string>Split view vertically</string>
+    <string>Split view &amp;vertically</string>
    </property>
   </action>
   <action name="uiCloseCurrentView">
@@ -580,7 +586,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Close current view</string>
+    <string>&amp;Close current view</string>
    </property>
   </action>
   <action name="uiUnsplitAll">
@@ -588,12 +594,12 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Unsplit All</string>
+    <string>&amp;Unsplit All</string>
    </property>
   </action>
   <action name="uiNewView">
    <property name="text">
-    <string>New view</string>
+    <string>&amp;New view</string>
    </property>
   </action>
   <action name="uiNewSheet">
@@ -602,7 +608,7 @@
      <normaloff>images:document/sheetnew.svg</normaloff>images:document/sheetnew.svg</iconset>
    </property>
    <property name="text">
-    <string>New sheet</string>
+    <string>New &amp;sheet</string>
    </property>
   </action>
   <action name="uiNewContext">
@@ -614,7 +620,7 @@
      <normaloff>images:document/contextnew.svg</normaloff>images:document/contextnew.svg</iconset>
    </property>
    <property name="text">
-    <string>New context...</string>
+    <string>New c&amp;ontext...</string>
    </property>
   </action>
   <action name="uiPlayFromSelection">
@@ -637,7 +643,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Animated scroll</string>
+    <string>&amp;Animated scroll</string>
    </property>
   </action>
   <action name="uiLockScrollPlayback">
@@ -648,7 +654,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Lock scroll while playback</string>
+    <string>&amp;Lock scroll while playback</string>
    </property>
   </action>
   <action name="uiZoomToHeight">
@@ -658,27 +664,27 @@
   </action>
   <action name="uiZoomToFit">
    <property name="text">
-    <string>Best &amp;fit</string>
+    <string>&amp;Best fit</string>
    </property>
   </action>
   <action name="uiZoomToSelection">
    <property name="text">
-    <string>Fit to selection</string>
+    <string>Fit to &amp;selection</string>
    </property>
   </action>
   <action name="uiNewWindow">
    <property name="text">
-    <string>New window</string>
+    <string>New &amp;window</string>
    </property>
   </action>
   <action name="uiCustomZoom">
    <property name="text">
-    <string>Custom...</string>
+    <string>&amp;Custom...</string>
    </property>
   </action>
   <action name="uiScoreView">
    <property name="text">
-    <string>Score view</string>
+    <string>Score &amp;view</string>
    </property>
   </action>
   <action name="uiLilyPondSource">
@@ -687,7 +693,7 @@
      <normaloff>images:general/lilypondsource.svg</normaloff>images:general/lilypondsource.svg</iconset>
    </property>
    <property name="text">
-    <string>LilyPond source</string>
+    <string>&amp;LilyPond source</string>
    </property>
   </action>
   <action name="uiCanorusMLSource">
@@ -696,7 +702,7 @@
      <normaloff>images:general/canorusmlsource.svg</normaloff>images:general/canorusmlsource.svg</iconset>
    </property>
    <property name="text">
-    <string>CanorusML source</string>
+    <string>&amp;CanorusML source</string>
    </property>
   </action>
   <action name="uiNewVoice">
@@ -705,7 +711,7 @@
      <normaloff>images:document/voicenew.svg</normaloff>images:document/voicenew.svg</iconset>
    </property>
    <property name="text">
-    <string>New voice</string>
+    <string>New &amp;voice</string>
    </property>
   </action>
   <action name="uiDocumentProperties">
@@ -714,7 +720,7 @@
      <normaloff>images:document/documentproperties.svg</normaloff>images:document/documentproperties.svg</iconset>
    </property>
    <property name="text">
-    <string>Document properties...</string>
+    <string>&amp;Document properties...</string>
    </property>
   </action>
   <action name="uiPrintDirectly">
@@ -765,7 +771,7 @@
      <normaloff>images:playable/insertplayable.svg</normaloff>images:playable/insertplayable.svg</iconset>
    </property>
    <property name="text">
-    <string>Notes and Rests</string>
+    <string>&amp;Notes and Rests</string>
    </property>
   </action>
   <action name="uiInsertFM">
@@ -780,7 +786,7 @@
      <normaloff>images:functionmark/insertfm.svg</normaloff>images:functionmark/insertfm.svg</iconset>
    </property>
    <property name="text">
-    <string>Function mark...</string>
+    <string>&amp;Function mark...</string>
    </property>
   </action>
   <action name="uiInsertClef">
@@ -792,7 +798,7 @@
      <normaloff>images:clef/cleff.svg</normaloff>images:clef/cleff.svg</iconset>
    </property>
    <property name="text">
-    <string>Clef...</string>
+    <string>&amp;Clef...</string>
    </property>
   </action>
   <action name="uiRemoveVoice">
@@ -877,6 +883,9 @@
    <property name="text">
     <string>&amp;Transpose...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
+   </property>
   </action>
   <action name="uiFMEllipse">
    <property name="checkable">
@@ -899,7 +908,7 @@
      <normaloff>images:document/syllable.svg</normaloff>images:document/syllable.svg</iconset>
    </property>
    <property name="text">
-    <string>Insert syllable</string>
+    <string>Insert s&amp;yllable</string>
    </property>
   </action>
   <action name="uiEditMode">
@@ -937,12 +946,12 @@
   </action>
   <action name="actionRecent_documents">
    <property name="text">
-    <string>recent documents dummy</string>
+    <string>&amp;recent documents dummy</string>
    </property>
   </action>
   <action name="uiMidiRecorder">
    <property name="text">
-    <string>Midi recorder</string>
+    <string>&amp;Midi recorder</string>
    </property>
   </action>
   <action name="uiResourceView">
@@ -950,7 +959,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Resources view</string>
+    <string>&amp;Resources view</string>
    </property>
   </action>
   <action name="uiInsertFBM">
@@ -973,7 +982,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Ruler</string>
+    <string>R&amp;uler</string>
    </property>
   </action>
  </widget>

@@ -45,7 +45,11 @@ class QAction;
 class CAKeySignatureUI;
 
 class CAMainWinProgressCtl;
+
+#ifdef QT_WEBENGINEWIDGETS_LIB
 class CAHelpBrowser;
+#endif
+
 class CAMenuToolButton;
 class CAUndoToolButton;
 class CALCDNumber;
@@ -58,6 +62,7 @@ class CAPrintCtl;
 class CAPreviewCtl;
 class CAPyConsole;
 class CATransposeView;
+class CAJumpToView;
 class CAMidiRecorderView;
 class CAKeybdInput;
 class CAExport;
@@ -147,8 +152,9 @@ public:
 	CAPyConsoleInterface* pyConsoleIface;
 
 	QDockWidget *helpDock() { return uiHelpDock; }
+#ifdef QT_WEBENGINEWIDGETS_LIB
 	CAHelpBrowser *helpWidget() { return uiHelpWidget; }
-
+#endif
 private slots:
 	///////////////////////////
 	// ToolBar/Menus actions //
@@ -275,6 +281,7 @@ private slots:
 	// Tools
 	void on_uiSettings_triggered();
 	void on_uiTranspose_triggered();
+	void on_uiJumpTo_triggered();
 	void on_uiMidiRecorder_triggered();
 
 	// Voice
@@ -346,6 +353,7 @@ private:
 	CAExport *_poExp; // abstract export instance
 	CAResourceView *_resourceView;
 	CATransposeView *_transposeView;
+	CAJumpToView *_jumpToView;
 	CAMidiRecorderView *_midiRecorderView;
 
 	QStatusBar *_permanentStatusBar;
@@ -538,6 +546,8 @@ private:
 
 		// Help widget
 		QDockWidget *uiHelpDock;
+#ifdef QT_WEBENGINEWIDGETS_LIB
 		CAHelpBrowser   *uiHelpWidget;
+#endif
 };
 #endif /* MAINWIN_H_ */

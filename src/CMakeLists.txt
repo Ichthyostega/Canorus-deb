@@ -38,16 +38,15 @@ ENDIF("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 #######################
 # The following lines detect scripting environments (SWIG, Ruby, Python etc.)
 FIND_PACKAGE(SWIG 3.0.8 QUIET)
-MESSAGE("Swig version ${SWIG_VERSION}")
 IF(SWIG_FOUND AND NOT NO_SWIG)
 	SET(USE_SWIG True)
-	MESSAGE("SWIG found, using scripting extensions.")
+	MESSAGE("SWIG version ${SWIG_VERSION} found, using scripting extensions.")
 ELSE(SWIG_FOUND AND NOT NO_SWIG)
         # Try again with version 2
         FIND_PACKAGE(SWIG 2.0.12 QUIET)
         IF(SWIG_FOUND AND NOT NO_SWIG)
                 SET(USE_SWIG True)
-                MESSAGE("SWIG found, using scripting extensions.")
+		MESSAGE("SWIG version ${SWIG_VERSION} found, using scripting extensions.")
         ELSE(SWIG_FOUND AND NOT NO_SWIG)
                 MESSAGE("SWIG version >=2.0.12 or >= 3.0.3 *not* found, version is ${SWIG_VERSION}, disabling SWIG!")
                 SET(NO_RUBY True)
@@ -138,6 +137,7 @@ SET(Canorus_UIs		# List of .ui forms drawn by qt-designer that need to be compil
 	
 	ui/midirecorder.ui
 	ui/transposeview.ui
+	ui/jumptoview.ui
 )
 
 # Define the MOC source files used by Canorus
@@ -150,6 +150,7 @@ SET(Canorus_Gui_MOCs	# List of classes which Qt needs to produce MOCs for them (
 	ui/settingsdialog.h
 	ui/propertiesdialog.h
 	ui/transposeview.h
+	ui/jumptoview.h
 	ui/singleaction.h
 
 	widgets/lcdnumber.h
@@ -164,7 +165,6 @@ SET(Canorus_Gui_MOCs	# List of classes which Qt needs to produce MOCs for them (
 	widgets/pyconsole.h
 	widgets/midirecorderview.h
 	widgets/resourceview.h
-	widgets/helpbrowser.h
 	widgets/actionseditor.h
 	widgets/progressstatusbar.h
 	widgets/tabwidget.h
@@ -175,6 +175,10 @@ SET(Canorus_Gui_MOCs	# List of classes which Qt needs to produce MOCs for them (
 
 	scorectl/keysignaturectl.h
 )
+
+IF(Qt5WebEngineWidgets_LIBRARIES)
+    SET(Canorus_Gui_MOCs ${Canorus_Gui_MOCs} widgets/helpbrowser.h)
+ENDIF(Qt5WebEngineWidgets_LIBRARIES)
 
 SET(Canorus_Core_MOCs # MOCs compiled into scripting library as well
 	import/import.h
@@ -194,7 +198,7 @@ SET(Canorus_Core_MOCs # MOCs compiled into scripting library as well
 )
 
 ################
-# Qt4 settings #
+# Qt5 settings #
 ################
 # Enable needed Qt modules for Canorus
 SET(QT_USE_QTXML True) # Save/Load
@@ -313,17 +317,21 @@ SET(Canorus_Widget_Srcs  	# Sources for all custom widgets present in Canorus
 	widgets/pyconsole.cpp
 	widgets/midirecorderview.cpp
 	widgets/resourceview.cpp
-	widgets/helpbrowser.cpp
 	widgets/actionseditor.cpp
 	widgets/progressstatusbar.cpp
 	widgets/tabwidget.cpp
 )
+
+IF(Qt5WebEngineWidgets_LIBRARIES)
+    SET(Canorus_Widget_Srcs ${Canorus_Widget_Srcs} widgets/helpbrowser.cpp)
+ENDIF(Qt5WebEngineWidgets_LIBRARIES)
 
 SET(Canorus_Ui_Srcs		# Implementations of widgets that have their own .ui qt-designer files
 	ui/mainwin.cpp
 	ui/settingsdialog.cpp
 	ui/propertiesdialog.cpp
 	ui/transposeview.cpp
+	ui/jumptoview.cpp
 	ui/singleaction.cpp
         ui/actionstorage.cpp
 
@@ -333,8 +341,8 @@ SET(Canorus_Ui_Srcs		# Implementations of widgets that have their own .ui qt-des
 SET(Canorus_Gui_Ctl_Srcs       # Control instances for user interface or views 
 	control/previewctl.cpp
 	control/printctl.cpp
-	control/helpctl.cpp
 	control/mainwinprogressctl.cpp
+        control/helpctl.cpp
 
 	scorectl/keysignaturectl.cpp
 )
@@ -404,10 +412,15 @@ SET(Canorus_Import_Srcs     # Classes for import various file formats to Canorus
 	import/canorusmlimport.cpp
 	import/canimport.cpp
 	import/musicxmlimport.cpp
+    import/mxlimport.cpp
 )
 
 SET(Canorus_RtMidi_Srcs		# RtMIDI library
 	rtmidi/RtMidi.cpp
+)
+
+SET(Canorus_ZIP_Srcs
+    zip/zip.c
 )
 
 SET(Canorus_PMIDI_Srcs		# PMIDI excerpts
@@ -434,6 +447,7 @@ SET(Canorus_Srcs
 	${Canorus_Export_Srcs}
 	${Canorus_Import_Srcs}
 	${Canorus_RtMidi_Srcs}
+	${Canorus_ZIP_Srcs}
 	${Canorus_Widget_Srcs}
 	${Canorus_PMIDI_Srcs}
 )
@@ -452,6 +466,7 @@ SET(Canorus_Swig_Srcs	# Sources which Swig needs to build its Python/Ruby module
 	${Canorus_Export_Srcs}
 	${Canorus_Ctl_Srcs}
 	${Canorus_RtMidi_Srcs}
+	${Canorus_ZIP_Srcs}
 	${Canorus_PMIDI_Srcs}
 	interface/rtmididevice.cpp
 	interface/mididevice.cpp
@@ -466,6 +481,7 @@ SET(Canorus_Swig_Srcs	# Sources which Swig needs to build its Python/Ruby module
 	scripting/swigruby.cpp
 	${Canorus_Core_MOC_Srcs}
 )
+
 IF(MINGW) # Append ZLIB srcs to Swig srcs on Windows
 	SET( Canorus_Swig_Srcs ${Canorus_Swig_Srcs} ${ZLIB_Srcs} )
 ENDIF(MINGW)
@@ -483,8 +499,6 @@ set_source_files_properties(${CANORUS_PYTHON_WRAP_CXX} PROPERTIES COMPILE_FLAGS 
 
 # Set translation files
 FILE(GLOB Canorus_Translation_Srcs "lang/*.ts") # lang/*.ts -> Canorus_Translation_Srcs
-#STRING(REGEX REPLACE "\\.ts" ".qm" Canorus_Translation_Bins "${Canorus_Translation_Srcs}") # Set Canorus_Translation_Bins to same values as Canorus_Translation_Srcs with different extensions
-FILE(GLOB Canorus_Translation_Bins ${CMAKE_BINARY_DIR}"/*.qm") # lang/*.ts -> Canorus_Translation_Srcs
 
 SET(Canorus_Fonts	# Music fonts needed by Canorus
 	fonts/CenturySchL-BoldItal.ttf	# Century family needed for numbers and signs
@@ -597,9 +611,9 @@ IF(USE_RUBY)
         SET(CANORUS_RUBY_WRAP_CXX ${CMAKE_CURRENT_SOURCE_DIR}/canorusrubyRUBY_wrap.cxx)
 	SET_SOURCE_FILES_PROPERTIES(${CANORUS_RUBY_WRAP_CXX} PROPERTIES GENERATED TRUE)
 	
-	SWIG_ADD_MODULE(CanorusRuby ruby
-		${Canorus_Swig_Srcs}
-		${CMAKE_CURRENT_SOURCE_DIR}/scripting/canorusruby.i
+	SWIG_ADD_LIBRARY(CanorusRuby
+		LANGUAGE ruby
+		SOURCES ${Canorus_Swig_Srcs} ${CMAKE_CURRENT_SOURCE_DIR}/scripting/canorusruby.i
 	)
 	SWIG_LINK_LIBRARIES(CanorusRuby ${RUBY_LIBRARY} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Svg Qt5::Xml Qt5::PrintSupport)
 	SET_TARGET_PROPERTIES( ${SWIG_MODULE_CanorusRuby_REAL_NAME} PROPERTIES COMPILE_FLAGS "-DSWIGCPP" )
@@ -612,9 +626,9 @@ IF(USE_PYTHON)
         SET(CANORUS_PYTHON_WRAP_CXX ${CMAKE_CURRENT_SOURCE_DIR}/canoruspythonPYTHON_wrap.cxx)
 	SET_SOURCE_FILES_PROPERTIES(${CANORUS_PYTHON_WRAP_CXX} PROPERTIES GENERATED TRUE)
 	
-	SWIG_ADD_MODULE(CanorusPython python 		# Warning! CMake renames CanorusPython automatically to _CanorusPython
-		${Canorus_Swig_Srcs}
-		${CMAKE_CURRENT_SOURCE_DIR}/scripting/canoruspython.i
+	SWIG_ADD_LIBRARY(CanorusPython
+		LANGUAGE python
+		SOURCES ${Canorus_Swig_Srcs} ${CMAKE_CURRENT_SOURCE_DIR}/scripting/canoruspython.i
 	)
 	SWIG_LINK_LIBRARIES(CanorusPython ${PYTHON_LIBRARY} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Svg Qt5::Xml Qt5::PrintSupport)
 	SET_TARGET_PROPERTIES( ${SWIG_MODULE_CanorusPython_REAL_NAME} PROPERTIES COMPILE_FLAGS "-DSWIGCPP" )
@@ -661,7 +675,7 @@ ENDIF(USE_PYTHON)
 # command. Never remove that line :-)
 # Add ${QT_QTTEST_LIBRARY} below to add the Qt Test library as well
 # Add ${POPPLERQT4_LIBRARY} ${POPPLER_LIBRARY} to reactivate poppler libraries
-TARGET_LINK_LIBRARIES(canorus Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Svg Qt5::Xml Qt5::PrintSupport Qt5::WebEngineWidgets ${RUBY_LIBRARY} ${PYTHON_LIBRARY} z pthread )
+TARGET_LINK_LIBRARIES(canorus Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Svg Qt5::Xml Qt5::PrintSupport ${Qt5WebEngineWidgets_LIBRARIES} ${RUBY_LIBRARY} ${PYTHON_LIBRARY} z pthread )
 # Duma leads to a crash on libfontconfig with Ubuntu (10.04/12.04)
 # duma )
 
@@ -706,24 +720,29 @@ ENDIF(MINGW)
 ###############
 # Translation #
 ###############
-qt5_create_translation(CANORUS_QM_FILES ${Canorus_UIC_Srcs} ${Canorus_Srcs} ${Canorus_Translation_Srcs} lang/template.ts)
-# Workaround for issue of duplicate ts files getting generated
-# Please write on the Canorus Dev List for a better
-SET(TSFOLDER ${CMAKE_SOURCE_DIR}/src/lang)
-FILE(REMOVE ${TSFOLDER}/*_*.ts)
-qt5_add_translation(CANORUS_QM_FILES ${Canorus_Translation_Srcs} )
-ADD_CUSTOM_TARGET(canorus_qm DEPENDS ${CANORUS_QM_FILES})
+# Do not use qt5_create_translation since make clean will delete all previous
+# .ts files. Use custom command instead:
+#qt5_create_translation(Canorus_Translation_Bins ${Canorus_UIC_Srcs} ${Canorus_Srcs} lang/template.ts)
+ADD_CUSTOM_COMMAND(
+	TARGET canorus
+	PRE_BUILD
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+	COMMAND ${Qt5_LUPDATE_EXECUTABLE}
+	ARGS -noobsolete ${Canorus_UIC_Srcs} ${Canorus_Srcs} -ts ${Canorus_Translation_Srcs} lang/template.ts
+)
+qt5_add_translation(Canorus_Translation_Bins ${Canorus_Translation_Srcs})
+
+ADD_CUSTOM_TARGET(canorus_qm DEPENDS ${Canorus_Translation_Bins})
 ADD_DEPENDENCIES(canorus canorus_qm)
 
 ###############
 # Dev Install #
 ###############
-message("CANORUS_DEV_INSTALL " ${CANORUS_DEV_INSTALL} " CANORUS_INSTALL_PREFIX " ${CANORUS_INSTALL_PREFIX})
 IF(${CANORUS_DEV_INSTALL} MATCHES True)
     ADD_CUSTOM_COMMAND(
         TARGET canorus
         POST_BUILD
-        COMMAND make install
+        COMMAND ${CMAKE_MAKE_PROGRAM} install
     )
 ENDIF(${CANORUS_DEV_INSTALL} MATCHES True)
 
@@ -765,7 +784,7 @@ INSTALL( DIRECTORY ${Canorus_Examples} DESTINATION "${CMAKE_INSTALL_PREFIX}/${CA
 
 IF(MINGW)
 	# Install Qt libs
-        INSTALL( FILES ${QT_BIN_DIR}/Qt5Core.dll ${QT_BIN_DIR}/Qt5Gui.dll ${QT_BIN_DIR}/Qt5Widgets.dll ${QT_BIN_DIR}/Qt5Svg.dll ${QT_BIN_DIR}/Qt5Xml.dll ${QT_BIN_DIR}/Qt5Sql.dll ${QT_BIN_DIR}/Qt5Network.dll ${QT_BIN_DIR}/Qt5CLucene.dll ${QT_BIN_DIR}/Qt5PrintSupport.dll DESTINATION ${CMAKE_INSTALL_PREFIX}/${CANORUS_INSTALL_BIN_DIR} )
+        INSTALL( FILES ${QT_BIN_DIR}/Qt5Core.dll ${QT_BIN_DIR}/Qt5Gui.dll ${QT_BIN_DIR}/Qt5Widgets.dll ${QT_BIN_DIR}/Qt5Svg.dll ${QT_BIN_DIR}/Qt5Xml.dll ${QT_BIN_DIR}/Qt5Sql.dll ${QT_BIN_DIR}/Qt5Network.dll ${QT_BIN_DIR}/Qt5PrintSupport.dll DESTINATION ${CMAKE_INSTALL_PREFIX}/${CANORUS_INSTALL_BIN_DIR} )
 	
 	# Install qsvg plugin for rendering SVG icons
 	get_target_property(QSvgIcon_loc Qt5::QSvgIconPlugin LOCATION)

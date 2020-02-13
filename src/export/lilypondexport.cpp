@@ -24,6 +24,8 @@
 #include "score/tempo.h"
 #include "score/ritardando.h"
 #include "score/tuplet.h"
+#include "score/barline.h"
+#include "score/repeatmark.h"
 
 /*!
 	\class CALilyPondExport
@@ -153,10 +155,10 @@ void CALilyPondExport::exportVoiceImpl(CAVoice *v) {
 				doAnacrusisCheck( time );
 				anacrusisCheck = false;
 			}
-			exportVolta( v->musElementList()[i] );	// A volta bracket has to come before a playable
+			exportMarksBeforeElement( v->musElementList()[i] );	// A volta bracket has to come before a playable
 			exportPlayable( static_cast<CAPlayable*>(v->musElementList()[i]) );
 		} else {
-			exportMarks(v->musElementList()[i]);
+			exportMarksAfterElement(v->musElementList()[i]);
 		}
 	}
 
@@ -232,7 +234,7 @@ void CALilyPondExport::exportPlayable( CAPlayable *elt ) {
 
 		// export chord marks at the end
 		if (!note->isPartOfChord() || note->isLastInChord()) {
-			exportMarks( note->getChord()[0] );
+			exportMarksAfterElement( note->getChord()[0] );
 		}
 
 		// add to the stream time, if the note is not part of the chord or is the last one in the chord
@@ -253,7 +255,7 @@ void CALilyPondExport::exportPlayable( CAPlayable *elt ) {
 			out() << playableLengthToLilyPond( rest->playableLength() );
 		}
 
-		exportMarks( rest );
+		exportMarksAfterElement( rest );
 
 		_lastPlayableLength = rest->playableLength();
 		_curStreamTime += rest->timeLength();
@@ -288,7 +290,7 @@ void CALilyPondExport::exportPlayable( CAPlayable *elt ) {
 
 	\sa exportNoteMarks()
 */
-void CALilyPondExport::exportMarks( CAMusElement *elt ) {
+void CALilyPondExport::exportMarksAfterElement( CAMusElement *elt ) {
 	for (int i=0; i<elt->markList().size(); i++) {
 		CAMark *curMark = elt->markList()[i];
 
@@ -359,18 +361,13 @@ void CALilyPondExport::exportMarks( CAMusElement *elt ) {
 
 			break;
 		}
-		case CAMark::Tempo: {
-			CATempo *t = static_cast<CATempo*>(curMark);
-			out() << "\\tempo " << playableLengthToLilyPond(t->beat()) << " = " << t->bpm() << " ";
-			
-			break;
-		}
 		case CAMark::Ritardando: {
 			CARitardando *r = static_cast<CARitardando*>(curMark);
 			out() << "^\\markup{ \\text \\italic \"" << ((r->ritardandoType()==CARitardando::Ritardando)?"rit.":"accel.") << "\"} ";
 			
 			break;
 		}
+		case CAMark::Tempo:
 		case CAMark::Crescendo:
 		case CAMark::Pedal:
 		case CAMark::InstrumentChange:
@@ -386,7 +383,7 @@ void CALilyPondExport::exportMarks( CAMusElement *elt ) {
 /*!
 	Exports the note-specific marks like fingering.
 
-	\sa exportMarks()
+	\sa exportMarksAfterElement()
  */
 void CALilyPondExport::exportNoteMarks( CANote *elt ) {
 	for (int i=0; i<elt->markList().size(); i++) {
@@ -423,7 +420,7 @@ void CALilyPondExport::exportNoteMarks( CANote *elt ) {
 /*!
 	Exports a volta bracket which is currently just a \a elt mark beginning with voltaBar or voltaRepeat.
 */
-void CALilyPondExport::exportVolta( CAMusElement *elt ) {
+void CALilyPondExport::exportMarksBeforeElement( CAMusElement *elt ) {
 	for (int i=0; i<elt->markList().size(); i++) {
 		CAMark *curMark = elt->markList()[i];
 
@@ -445,8 +442,14 @@ void CALilyPondExport::exportVolta( CAMusElement *elt ) {
 			};
 			break;
 		}
-		case CAMark::Fingering:
-		case CAMark::Tempo:
+		case CAMark::Tempo: {
+			CATempo *t = static_cast<CATempo*>(curMark);
+			out() << "\\tempo " << playableLengthToLilyPond(t->beat()) << " = " << t->bpm() << " ";
+			
+			break;
+                }
+
+                case CAMark::Fingering:
 		case CAMark::Ritardando:
 		case CAMark::Crescendo:
 		case CAMark::Pedal:
@@ -799,9 +802,18 @@ void CALilyPondExport::exportSheetImpl(CASheet *sheet)
 
 	writeDocumentHeader();
 
-	// Write the volta helper function in case we need it
+
+	for ( int c = 0; c < sheet->contextList().size(); ++c ) {
+		if (sheet->contextList()[c]->contextType() == CAContext::Staff) {
+			scanForRepeats(static_cast<CAStaff*>(sheet->contextList()[c]));
+			break;
+		}
+	}
+
+	/* Write the volta helper function in case we need it
 	if (!_voltaFunctionWritten)
 		voltaFunction();
+	 */
 
 	// Export voices as Lilypond variables: \StaffOneVoiceOne = \relative c { ... }
 	for ( int c = 0; c < sheet->contextList().size(); ++c ) {
@@ -839,6 +851,37 @@ void CALilyPondExport::writeDocumentHeader() {
 	indentLess();
 
 	out() << "}\n";
+}
+
+/*!
+	Export document title, subtitle, composer, copyright etc.
+*/
+void CALilyPondExport::scanForRepeats(CAStaff *staff) {
+	out() << "\n % \\repeat volta xxx \n";
+
+	CABarline *bl;
+	QList<CAMark*> ml;
+
+	// barlineRefs aus score/staff.h
+	for (int b = 0; b < staff->barlineRefs().size(); b++ ) {
+		out() << "% " << (staff->barlineRefs()[b])->musElementType() << "  " ;
+		bl = static_cast<CABarline*>(staff->barlineRefs()[b]);
+		bl->barlineType();
+		out() << CABarline::barlineTypeToString(bl->barlineType());
+		if (	bl->barlineType()==CABarline::RepeatClose ||
+			bl->barlineType()==CABarline::RepeatOpen ||
+			bl->barlineType()==CABarline::RepeatCloseOpen ) {
+			out() << "\n % \\repeat volta X " << CABarline::barlineTypeToString( bl->barlineType()) << "\n";
+		}
+		ml = bl->markList();
+		for (int e = 0; e < ml.size(); e++ ) {
+			if ( ml[e]->markType() == CAMark::RepeatMark && static_cast<CARepeatMark*>(ml[e])->repeatMarkType() == CARepeatMark::Volta) {
+				out() << "\n % \\repeat volta X " << CARepeatMark::repeatMarkTypeToString( static_cast<CARepeatMark*>(ml[e])->repeatMarkType()) << "\n";
+			}
+		}
+		
+	}
+	// inline QList<CAMusElement *>& barlineRefs() { return _barlineList; }
 }
 
 /*!

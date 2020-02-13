@@ -32,6 +32,7 @@
 #include "ui/settingsdialog.h"
 #include "ui/propertiesdialog.h"
 #include "ui/transposeview.h"
+#include "ui/jumptoview.h"
 #include "ui/actionstorage.h"
 
 #include "scoreui/keysignatureui.h"
@@ -53,7 +54,9 @@
 #include "widgets/undotoolbutton.h"
 #include "widgets/lcdnumber.h"
 #include "widgets/midirecorderview.h"
+#ifdef QT_WEBENGINEWIDGETS_LIB
 #include "widgets/helpbrowser.h"
+#endif
 
 #include "widgets/view.h"
 #include "widgets/viewcontainer.h"
@@ -117,6 +120,7 @@
 #include "import/canimport.h"
 #include "import/midiimport.h"
 #include "import/musicxmlimport.h"
+#include "import/mxlimport.h"
 #include "core/notechecker.h"
 
 /*!
@@ -136,10 +140,10 @@
 	\sa CAView, CACanorus
 */
 
-QFileDialog *CAMainWin::uiOpenDialog = 0;
-QFileDialog *CAMainWin::uiSaveDialog = 0;
-QFileDialog *CAMainWin::uiImportDialog = 0;
-QFileDialog *CAMainWin::uiExportDialog = 0;
+QFileDialog *CAMainWin::uiOpenDialog = nullptr;
+QFileDialog *CAMainWin::uiSaveDialog = nullptr;
+QFileDialog *CAMainWin::uiImportDialog = nullptr;
+QFileDialog *CAMainWin::uiExportDialog = nullptr;
 
 /*!
 	Default constructor.
@@ -149,9 +153,9 @@ CAMainWin::CAMainWin(QMainWindow *oParent)
  : QMainWindow( oParent ),
    _mode(NoDocumentMode),
    _mainWinProgressCtl(this),
-   _playbackView(0),
-   _repaintTimer(0),
-   _playback(0)
+   _playbackView(nullptr),
+   _repaintTimer(nullptr),
+   _playback(nullptr)
 {
 	setAttribute( Qt::WA_DeleteOnClose );
 	_iNumAllowed = 1;
@@ -182,19 +186,22 @@ CAMainWin::CAMainWin(QMainWindow *oParent)
 	// Setup the midi keyboad input processing object
 	_keybdInput = new CAKeybdInput( this );
 
-	_resourceView = new CAResourceView( 0, 0 );
+    _resourceView = new CAResourceView( nullptr, nullptr );
 	_resourceView->hide();
 
-	_midiRecorderView = 0;
+	// Tools
+	_midiRecorderView = nullptr;
 
 	_transposeView = new CATransposeView( this );
 	addDockWidget( Qt::RightDockWidgetArea, _transposeView );
 	_transposeView->hide();
 
+	_jumpToView = new CAJumpToView( this );
+
 	_permanentStatusBar = statusBar();
 
-	setDocument( 0 );
-	_poExp = 0;
+	setDocument( nullptr );
+    _poExp = nullptr;
 	CACanorus::addMainWin( this );
 }
 
@@ -301,7 +308,7 @@ void CAMainWin::createCustomActions() {
 		uiMarkType->addButton( QIcon("images:mark/dynamic/decrescendo.svg"),   CAMark::Crescendo*(-1), tr("Decrescendo") );
 		uiMarkType->addButton( QIcon("images:mark/fermata/normal.svg"),        CAMark::Fermata, tr("Fermata") );
 		uiMarkType->addButton( QIcon("images:mark/text.svg"),                  CAMark::Text, tr("Arbitrary Text") );
-		uiMarkType->addButton( QIcon("images:mark/repeatmark/coda.svg"),       CAMark::RepeatMark, tr("Repeat Mark") );
+		uiMarkType->addButton( QIcon("images:mark/repeatmark/volta1.svg"),       CAMark::RepeatMark, tr("Repeat Mark") );
 		uiMarkType->addButton( QIcon("images:mark/pedal.svg"),                 CAMark::Pedal, tr("Pedal Mark") );
 		uiMarkType->addButton( QIcon("images:mark/bookmark.svg"),              CAMark::BookMark, tr("Bookmark") );
 		uiMarkType->addButton( QIcon("images:mark/rehersalmark.svg"),          CAMark::RehersalMark, tr("Rehersal Mark") );
@@ -483,7 +490,7 @@ void CAMainWin::createCustomActions() {
 		uiFMTonicDegree->addButton( QIcon("images:functionmark/fmvii.svg"), CAFunctionMark::VII, tr("VII") );
 	uiFMKeySig = new QComboBox( this );
 		uiFMKeySig->setObjectName("uiFMKeySig");
-		CADrawableKeySignature::populateComboBox( uiFMKeySig );
+		CAKeySignatureUI::populateComboBox( uiFMKeySig );
 
 	uiDynamicToolBar = new QToolBar( tr("Dynamic marks ToolBar"), this );
 	uiDynamicText = new CAMenuToolButton( tr("Select Dynamic"), 5, this );
@@ -550,15 +557,15 @@ void CAMainWin::createCustomActions() {
 	uiRepeatMarkToolBar = new QToolBar( tr("Repeat Mark ToolBar"), this );
 	uiRepeatMarkType = new CAMenuToolButton( tr("Repeat Mark Type"), 3, this );
 		uiRepeatMarkType->setObjectName("uiRepeatMarkType");
+		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/volta1.svg"), -2, tr("Volta 1st", "repeat mark") ); // -1 can't be used?!
+		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/volta2.svg"), -3, tr("Volta 2nd", "repeat mark") );
+		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/volta3.svg"), -4, tr("Volta 3rd", "repeat mark") );
 		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/segno.svg"), CARepeatMark::Segno, tr("Segno", "repeat mark") );
 		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/coda.svg"), CARepeatMark::Coda, tr("Coda", "repeat mark") );
 		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/varcoda.svg"), CARepeatMark::VarCoda, tr("VarCoda", "repeat mark") );
 		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/dalsegno.svg"), CARepeatMark::DalSegno, tr("Dal Segno", "repeat mark") );
 		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/dalcoda.svg"), CARepeatMark::DalCoda, tr("Dal Coda", "repeat mark") );
 		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/dalvarcoda.svg"), CARepeatMark::DalVarCoda, tr("Dal VarCoda", "repeat mark") );
-		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/volta1.svg"), -2, tr("Volta 1st", "repeat mark") ); // -1 can't be used?!
-		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/volta2.svg"), -3, tr("Volta 2nd", "repeat mark") );
-		uiRepeatMarkType->addButton( QIcon("images:mark/repeatmark/volta3.svg"), -4, tr("Volta 3rd", "repeat mark") );
 
 	uiFingeringToolBar = new QToolBar( tr("Fingering ToolBar"), this );
 	uiFinger = new CAMenuToolButton( tr("Finger"), 5, this );
@@ -582,8 +589,10 @@ void CAMainWin::createCustomActions() {
 	uiHelpDock = new QDockWidget(tr("Help"), this);
 	uiHelpDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	uiHelpDock->setMaximumWidth(400);
+#ifdef QT_WEBENGINEWIDGETS_LIB
 	uiHelpWidget = new CAHelpBrowser( uiHelpDock );
 	uiHelpDock->setWidget( uiHelpWidget );
+#endif
 
 #ifdef USE_PYTHON
 	uiPyConsoleDock = new QDockWidget(tr("Canorus console"), this);
@@ -610,11 +619,11 @@ void CAMainWin::setupCustomUi() {
 	// Standard Toolbar
 	uiUndo->setDefaultAction( uiStandardToolBar->insertWidget( uiCut, uiUndo ) );
 	uiUndo->defaultAction()->setText(tr("Undo"));
-    uiUndo->defaultAction()->setShortcut(QApplication::translate("uiMainWindow", "Ctrl+Z", 0 /*, QApplication::UnicodeUTF8*/));
+    uiUndo->defaultAction()->setShortcut(QApplication::translate("uiMainWindow", "Ctrl+Z", nullptr /*, QApplication::UnicodeUTF8*/));
 	uiMenuEdit->insertAction( uiCut, uiUndo->defaultAction() );
 	QList<QKeySequence> redoShortcuts;
-	redoShortcuts << QApplication::translate("uiMainWindow", "Ctrl+Y", 0 /*, QApplication::UnicodeUTF8*/ );
-	redoShortcuts << QApplication::translate("uiMainWindow", "Ctrl+Shift+Z", 0 /*, QApplication::UnicodeUTF8*/ );
+    redoShortcuts << QApplication::translate("uiMainWindow", "Ctrl+Y", nullptr /*, QApplication::UnicodeUTF8*/ );
+    redoShortcuts << QApplication::translate("uiMainWindow", "Ctrl+Shift+Z", nullptr /*, QApplication::UnicodeUTF8*/ );
 	uiRedo->setDefaultAction( uiStandardToolBar->insertWidget( uiCut, uiRedo ) );
 	uiRedo->defaultAction()->setText(tr("Redo"));
     uiRedo->defaultAction()->setShortcuts(redoShortcuts);
@@ -945,10 +954,10 @@ bool CAMainWin::handleUnsavedChanges() {
 	It does not add the sheet to the document.
 */
 void CAMainWin::addSheet(CASheet *s) {
-	CAScoreView *v = new CAScoreView(s, 0);
+    CAScoreView *v = new CAScoreView(s, nullptr);
 	initView( v );
 
-	CAViewContainer *vpc = new CAViewContainer( 0 );
+    CAViewContainer *vpc = new CAViewContainer( nullptr );
 	vpc->addView( v );
 	_viewContainerList << vpc;
 	_sheetMap[vpc] = s;
@@ -985,7 +994,7 @@ void CAMainWin::clearUI() {
 		delete _viewList.takeFirst();
 
 	_sheetMap.clear();
-	setCurrentView( 0 );
+    setCurrentView( nullptr );
 
 	if (_midiRecorderView) {
 		delete _midiRecorderView;
@@ -998,7 +1007,7 @@ void CAMainWin::clearUI() {
 	Called when the current sheet is switched in the tab widget.
 	\warning This method is only called when the index of the selected tab changes. If you remove the current tab and the next selected tab gets the same index, this slot isn't called!
 */
-void CAMainWin::on_uiTabWidget_currentChanged(int idx) {
+void CAMainWin::on_uiTabWidget_currentChanged(int) {
 	setCurrentViewContainer( static_cast<CAViewContainer*>(uiTabWidget->currentWidget()) );
 	if (currentViewContainer())
 		setCurrentView( currentViewContainer()->currentView() );
@@ -1111,7 +1120,7 @@ void CAMainWin::on_uiCloseDocument_triggered() {
 		clearUI();
 		delete document();
 	}
-	setDocument( 0 );
+    setDocument( nullptr );
 	uiCloseDocument->setEnabled(false);
 	rebuildUI();
 }
@@ -1120,7 +1129,7 @@ void CAMainWin::on_uiCloseDocument_triggered() {
 	Shows the current score in CanorusML syntax in a new or the current View.
 */
 void CAMainWin::on_uiCanorusMLSource_triggered() {
-	CASourceView *v = new CASourceView(document(), 0);
+    CASourceView *v = new CASourceView(document(), nullptr);
 	initView( v );
 	currentViewContainer()->addView( v );
 
@@ -1162,7 +1171,7 @@ void CAMainWin::floatViewClosed(CAView* v)
 }
 
 void CAMainWin::on_uiNewView_triggered() {
-	CAView *v = currentView()->clone( 0 );
+    CAView *v = currentView()->clone( nullptr );
 	initView( v );
 	connect(v, SIGNAL(closed(CAView*)), this, SLOT(floatViewClosed(CAView*)));
 	v->show();
@@ -1222,7 +1231,7 @@ void CAMainWin::initView(CAView *v) {
 */
 CASheet *CAMainWin::currentSheet() {
 	if (!currentView()) {
-		return 0;
+        return nullptr;
 	}
 	
 	switch (currentView()->viewType()) {
@@ -1243,7 +1252,7 @@ CASheet *CAMainWin::currentSheet() {
 	}
 	}
 
-	return 0;
+    return nullptr;
 }
 
 /*!
@@ -1256,7 +1265,7 @@ CAContext *CAMainWin::currentContext() {
 	   ) {
 		return static_cast<CAScoreView*>(currentView())->currentContext()->context();
 	} else
-		return 0;
+        return nullptr;
 }
 
 /*!
@@ -1267,7 +1276,7 @@ CAVoice *CAMainWin::currentVoice() {
 		return currentScoreView()->selectedVoice();
 	}
 
-	return 0;
+    return nullptr;
 }
 
 /*!
@@ -1300,7 +1309,7 @@ void CAMainWin::on_uiNewDocument_triggered() {
 	newDocument();
 }
 
-void CAMainWin::on_uiUndo_toggled( bool checked, int row ) {
+void CAMainWin::on_uiUndo_toggled( bool, int row ) {
 	stopPlayback();
 	if ( document() ) {
 		int curVoiceIdx = -1;
@@ -1318,14 +1327,14 @@ void CAMainWin::on_uiUndo_toggled( bool checked, int row ) {
 			}
 		}
 		
-		CACanorus::rebuildUI( document(), 0 );
+        CACanorus::rebuildUI( document(), nullptr );
 		if (curVoiceIdx>=0 && curVoiceIdx<currentSheet()->voiceList().size()) {
 			setCurrentVoice( currentSheet()->voiceList()[curVoiceIdx] );
 		}
 	}
 }
 
-void CAMainWin::on_uiRedo_toggled( bool checked, int row ) {
+void CAMainWin::on_uiRedo_toggled( bool, int row ) {
 	stopPlayback();
 	if ( document() ) {
 		int curVoiceIdx = -1;
@@ -1343,7 +1352,7 @@ void CAMainWin::on_uiRedo_toggled( bool checked, int row ) {
 			}
 		}
 		
-		CACanorus::rebuildUI( document(), 0 );
+        CACanorus::rebuildUI( document(), nullptr );
 
 		if (curVoiceIdx>=0 && curVoiceIdx<currentSheet()->voiceList().size()) {
 			setCurrentVoice( currentSheet()->voiceList()[curVoiceIdx] );
@@ -1466,7 +1475,7 @@ void CAMainWin::on_uiRemoveContext_triggered() {
 	}
 }
 
-void CAMainWin::on_uiContextType_toggled(bool checked, int buttonId) {
+void CAMainWin::on_uiContextType_toggled(bool checked, int) {
 	if (checked) {
 		musElementFactory()->setMusElementType( CAMusElement::Undefined );
 		setMode( InsertMode );
@@ -1692,7 +1701,7 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 	v->selectCElement(coords.x(), coords.y());
 
 	QList<CADrawableMusElement*> l = v->musElementsAt( coords.x(), coords.y() );
-	CADrawableMusElement *newlySelectedElement=0;
+    CADrawableMusElement *newlySelectedElement=nullptr;
 	int idx=-1;
 
 	if (l.size() > 0) { // multiple elements can share the same coordinates
@@ -1735,8 +1744,8 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 		case EditMode: {
 			v->clearSelectionRegionList();
 
-			CADrawableMusElement *dElt = 0;
-			CAMusElement *elt = 0;
+            CADrawableMusElement *dElt = nullptr;
+            CAMusElement *elt = nullptr;
 			
 			if ( v->selection().size() ) {
 				dElt = v->selection().front();
@@ -1744,23 +1753,26 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 				if (!elt) break;
 
 				// debug
-				std::cout << "drawableMusElement: " << dElt << ", x,y=" << dElt->xPos() << "," << dElt->yPos() << ", w,h=" << dElt->width() << "," << dElt->height() << ", dContext=" << dElt->drawableContext() << std::endl;
-				std::cout << "musElement: " << elt << ", timeStart=" << elt->timeStart() << ", timeEnd=" << elt->timeEnd() << ", context=" << elt->context();
+                QString debugStr;
+                QTextStream outStr(&debugStr);
+                outStr << "drawableMusElement: " << dElt << ", x,y=" << dElt->xPos() << "," << dElt->yPos() << ", w,h=" << dElt->width() << "," << dElt->height() << ", dContext=" << dElt->drawableContext() << endl;
+                outStr << "musElement: " << elt << ", timeStart=" << elt->timeStart() << ", timeEnd=" << elt->timeEnd() << ", context=" << elt->context();
 				if (elt->isPlayable()) {
-					std::cout << ", voice=" << ((CAPlayable*)elt)->voice() << ", voiceNr=" << ((CAPlayable*)elt)->voice()->voiceNumber() << ", idxInVoice=" << ((CAPlayable*)elt)->voice()->musElementList().indexOf(elt);
-					std::cout << ", voiceStaff=" << ((CAPlayable*)elt)->voice()->staff();
+                    outStr << ", voice=" << ((CAPlayable*)elt)->voice() << ", voiceNr=" << ((CAPlayable*)elt)->voice()->voiceNumber() << ", idxInVoice=" << ((CAPlayable*)elt)->voice()->musElementList().indexOf(elt);
+                    outStr << ", voiceStaff=" << ((CAPlayable*)elt)->voice()->staff();
 
 					if (static_cast<CAPlayable*>(elt)->tuplet()) {
-						std::cout << ", tuplet=" << static_cast<CAPlayable*>(elt)->tuplet();
+                        outStr << ", tuplet=" << static_cast<CAPlayable*>(elt)->tuplet();
 					}
 
 					if (elt->musElementType()==CAMusElement::Note)
-						std::cout << ", pitch=" << static_cast<CANote*>(elt)->diatonicPitch().noteName();
+                        outStr << ", pitch=" << static_cast<CANote*>(elt)->diatonicPitch().noteName();
 				}
 				if (elt->musElementType()==CAMusElement::Slur) {
-					std::cout << "noteStart=" << static_cast<CASlur*>(elt)->noteStart() << ", noteEnd=" << static_cast<CASlur*>(elt)->noteStart();
+                    outStr << "noteStart=" << static_cast<CASlur*>(elt)->noteStart() << ", noteEnd=" << static_cast<CASlur*>(elt)->noteStart();
 				}
-				std::cout << std::endl;
+                outStr << endl;
+                qDebug().noquote() << debugStr;
 			}
 			
 			// lyrics, texts, bookmarks
@@ -1774,13 +1786,13 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 			// Insert context
 			if (uiContextType->isChecked()) {
 				// Add new Context
-				CAContext *newContext;
+                CAContext *newContext=nullptr;
 				CADrawableContext *dupContext = v->nearestUpContext(coords.x(), coords.y());
 				switch(uiContextType->currentId()) {
 					case CAContext::Staff: {
 						CACanorus::undo()->createUndoCommand( document(), tr("new staff", "undo"));
 						v->sheet()->insertContextAfter(
-							dupContext?dupContext->context():0,
+                            dupContext?dupContext->context():nullptr,
 							newContext = new CAStaff(
 								tr("Staff%1").arg(v->sheet()->staffList().size()+1),
 								v->sheet()
@@ -1797,11 +1809,11 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 							stanza = static_cast<CALyricsContext*>(dupContext->context())->stanzaNumber()+1;*/
 
 						v->sheet()->insertContextAfter(
-							dupContext?dupContext->context():0,
+                            dupContext?dupContext->context():nullptr,
 							newContext = new CALyricsContext(
 								tr("LyricsContext%1").arg(v->sheet()->contextList().size()+1),
 								1,
-								(v->sheet()->voiceList().size()?v->sheet()->voiceList().at(0):0)
+                                (v->sheet()->voiceList().size()?v->sheet()->voiceList().at(0):nullptr)
 							)
 						);
 
@@ -1810,7 +1822,7 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 					case CAContext::FiguredBassContext: {
 						CACanorus::undo()->createUndoCommand( document(), tr("new figured bass context", "undo"));
 						v->sheet()->insertContextAfter(
-							dupContext?dupContext->context():0,
+                            dupContext?dupContext->context():nullptr,
 							newContext = new CAFiguredBassContext(
 								tr("FiguredBassContext%1").arg(v->sheet()->contextList().size()+1),
 								v->sheet()
@@ -1821,7 +1833,7 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 					case CAContext::FunctionMarkContext: {
 						CACanorus::undo()->createUndoCommand( document(), tr("new function mark context", "undo"));
 						v->sheet()->insertContextAfter(
-							dupContext?dupContext->context():0,
+                            dupContext?dupContext->context():nullptr,
 							newContext = new CAFunctionMarkContext(
 								tr("FunctionMarkContext%1").arg(v->sheet()->contextList().size()+1),
 								v->sheet()
@@ -1875,7 +1887,7 @@ void CAMainWin::scoreViewMousePress(QMouseEvent *e, const QPoint coords) {
 			break;
 	}
 
-	CAPluginManager::action("onScoreViewClick", document(), 0, 0, this);
+    CAPluginManager::action("onScoreViewClick", document(), nullptr, nullptr, this);
 
 	updateToolBars();
 	v->repaint();
@@ -1977,7 +1989,7 @@ void CAMainWin::scoreViewMouseMove(QMouseEvent *e, QPoint coords) {
 
 	\sa CAScoreView::selectAllCurBar()
  */
-void CAMainWin::scoreViewDoubleClick( QMouseEvent *e, const QPoint coords ) {
+void CAMainWin::scoreViewDoubleClick( QMouseEvent *e, const QPoint ) {
 	if (mode() == EditMode) {
 		static_cast<CAScoreView*>(sender())->selectAllCurBar();
 		static_cast<CAScoreView*>(sender())->repaint();
@@ -1990,7 +2002,7 @@ void CAMainWin::scoreViewDoubleClick( QMouseEvent *e, const QPoint coords ) {
 
 	\sa CAScoreView::selectAllCurContext()
  */
-void CAMainWin::scoreViewTripleClick( QMouseEvent *e, const QPoint coords ) {
+void CAMainWin::scoreViewTripleClick( QMouseEvent *e, const QPoint ) {
 	if (mode() == EditMode) {
 		static_cast<CAScoreView*>(sender())->selectAllCurContext();
 		static_cast<CAScoreView*>(sender())->repaint();
@@ -2454,37 +2466,55 @@ void CAMainWin::scoreViewKeyPress(QKeyEvent *e) {
 		case Qt::Key_Backtab: {
 			int idx = -1;
 			if( e->modifiers() == Qt::ControlModifier ) // Control tab has different use
-				idx = uiTabWidget->currentIndex();
-			else
-				idx = currentSheet()->voiceList().indexOf(currentVoice());
+                            idx = uiTabWidget->currentIndex();
+			else if (currentVoice())
+                            idx = currentSheet()->voiceList().indexOf(currentVoice());
+                        else
+                            idx = currentSheet()->contextList().indexOf(currentContext());
+                        
 			if (e->key()==Qt::Key_Tab) {
 				idx++;
 			} else {
 				idx--;
 			}
+                        
 			// Next/Previous sheet selection
 			if( e->modifiers() == Qt::ControlModifier )
 			{
 				// Cycle if first or last sheet was reached
-				if( idx >= uiTabWidget->count() )
-					idx = 0;
+				if ( idx >= uiTabWidget->count() )
+                                    idx = 0;
 				else
-				if( idx<0 )
-					idx = uiTabWidget->count() -1;
+				if ( idx<0 )
+                                    idx = uiTabWidget->count() -1;
 				//if( idx >=0 && idx < uiTabWidget->count() )
 					uiTabWidget->setCurrentIndex(idx);
 			}
 			else // Next/Previous Voice selection
 			if (currentVoice() && (mode()==InsertMode || mode()==EditMode)) {
 				// Cycle if first or last voice number was reached
-				if( idx >= currentSheet()->voiceList().size() )
-					idx = 0;
+				if ( idx >= currentSheet()->voiceList().size() )
+                                    idx = 0;
 				else
-				if( idx<0 )
-					idx = currentSheet()->voiceList().size() -1;
+				if ( idx<0 )
+                                    idx = currentSheet()->voiceList().size()-1;
 				
-				setCurrentVoice( currentSheet()->voiceList()[idx] );
+                                CAVoice *v = currentSheet()->voiceList()[idx];
+                                currentScoreView()->selectContext( v->staff() );
+                                uiVoiceNum->setRealValue( v->voiceNumber() ); // also calls setCurrentVoice and updates the UI
 			}
+                        else // Next/Previous Context, if selection is empty
+                        if (currentScoreView()->selection().size()==0)
+                        {
+                            if ( idx >= currentSheet()->contextList().size() )
+                                idx = 0 ;
+                            else
+                            if ( idx<0 )
+                                idx = currentSheet()->contextList().size()-1;
+                            currentScoreView()->selectContext( currentSheet()->contextList()[idx] );
+                            updateToolBars();
+                            currentScoreView()->repaint();
+                        }
 			break;
 		}
 	}
@@ -2582,7 +2612,7 @@ bool CAMainWin::insertMusElementAt(const QPoint coords, CAScoreView *v) {
 				// same code for the Rest insertion
 
 				CATuplet *tuplet = static_cast<CAPlayable*>(left->musElement())->tuplet();
-				QList<CAPlayable*> noteList; int number; int actualNumber;
+				QList<CAPlayable*> noteList; int number=0; int actualNumber=0;
 				if ( tuplet  ) {
 					noteList = tuplet->noteList();
 					number = tuplet->number();
@@ -2617,14 +2647,16 @@ bool CAMainWin::insertMusElementAt(const QPoint coords, CAScoreView *v) {
 				}
 
 				success = musElementFactory()->configureNote( drawableStaff->calculatePitch(coords.x(), coords.y()), voice, next, false );
-				if ( success && CACanorus::settings()->autoBar() )
-					CAStaff::placeAutoBar( static_cast<CAPlayable*>(musElementFactory()->musElement()) );
 
 				if( success )
 					noteList.insert( tupIndex, static_cast<CAPlayable*>(musElementFactory()->musElement()) );
 
 				if ( success && tuplet ) {
 					new CATuplet( number, actualNumber, noteList );
+				}
+
+				if ( success && CACanorus::settings()->autoBar() ) {
+					CAStaff::placeAutoBar( static_cast<CAPlayable*>(musElementFactory()->musElement()) );
 				}
 			} else {
 
@@ -2680,7 +2712,7 @@ bool CAMainWin::insertMusElementAt(const QPoint coords, CAScoreView *v) {
 				// same code for the Note insertion
 
 				CATuplet *tuplet = static_cast<CAPlayable*>(left->musElement())->tuplet();
-				QList<CAPlayable*> noteList; int number; int actualNumber;
+				QList<CAPlayable*> noteList; int number=0; int actualNumber=0;
 				if ( tuplet  ) {
 					noteList = tuplet->noteList();
 					number = tuplet->number();
@@ -2715,14 +2747,17 @@ bool CAMainWin::insertMusElementAt(const QPoint coords, CAScoreView *v) {
 				}
 
 				success = musElementFactory()->configureRest( voice, next );
-				if ( success && CACanorus::settings()->autoBar() )
-					CAStaff::placeAutoBar( static_cast<CAPlayable*>(musElementFactory()->musElement()) );
 
-				if( success )
+				if( success ) {
 					noteList.insert( tupIndex, static_cast<CAPlayable*>(musElementFactory()->musElement()) );
+				}
 
 				if( success && tuplet ) {
 					new CATuplet( number, actualNumber, noteList );
+				}
+
+				if ( success && CACanorus::settings()->autoBar() ) {
+					CAStaff::placeAutoBar( static_cast<CAPlayable*>(musElementFactory()->musElement()) );
 				}
 			} else {
 				if ( dright && dright->musElement() && dright->musElement()->isPlayable() && static_cast<CAPlayable*>(dright->musElement())->tuplet() && !static_cast<CAPlayable*>(dright->musElement())->isFirstInTuplet() ) {
@@ -3357,6 +3392,15 @@ void CAMainWin::on_uiImportDocument_triggered() {
 				import->importDocument();
 			}
 		}
+        else
+        if ( uiImportDialog->selectedNameFilter() == CAFileFormats::MXL_FILTER ) {
+            import = new CAMXLImport();
+            if (import) {
+                import->setStreamFromFile( s );
+                connect( import, SIGNAL(importDone(int)), this, SLOT(onImportDone(int)) );
+                import->importDocument();
+            }
+        }
 		if (import)
 			_mainWinProgressCtl.startProgress( import );
 	}
@@ -4206,7 +4250,11 @@ void CAMainWin::sourceViewCommit(QString inputString) {
 }
 
 void CAMainWin::on_uiUsersGuide_triggered() {
+#ifdef QT_WEBENGINEWIDGETS_LIB
 	CACanorus::help()->showUsersGuide( "playback", this );
+#else
+	CACanorus::help()->showUsersGuide( "playback" );
+#endif
 }
 
 void CAMainWin::on_uiAboutQt_triggered() {
@@ -4262,6 +4310,12 @@ void CAMainWin::on_uiMidiRecorder_triggered() {
 void CAMainWin::on_uiTranspose_triggered() {
 	if (document()) {
 		_transposeView->show();
+	}
+}
+
+void CAMainWin::on_uiJumpTo_triggered() {
+	if (document() && currentSheet()) {
+		_jumpToView->show();
 	}
 }
 
@@ -4898,7 +4952,11 @@ void CAMainWin::updateFMToolBar() {
 		uiFMTonicDegree->setCurrentId( fm->tonicDegree()*(fm->isTonicDegreeMinor()?-1:1) );
 		uiFMEllipse->setChecked( fm->isPartOfEllipse() );
 
-		uiFMKeySig->setCurrentIndex( CADrawableKeySignature::diatonicKeyToRow(fm->key()) );
+		uiFMKeySig->setCurrentIndex(
+			uiFMKeySig->findData(
+				CADiatonicKey::diatonicKeyToString(fm->key())
+			)
+		);
 
 		uiFMToolBar->show();
 	} else {
