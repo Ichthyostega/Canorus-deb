@@ -1,8 +1,8 @@
-canorus (0.7.3.RC3+dfsg-1~buster) Lumiera-buster-tool; urgency=low
+canorus (0.7.3.RC3+dfsg-1ppa1~focal) focal; urgency=low
 
   * New upstream version
   * bump standards and debhelper level
-  * Build (unofficial) package for Debian/Buster(stable)
+  * Build (unofficial) package for Ubuntu/Focal (20.04 LTS - upcoming)
 
  -- Hermann Vosseler <deb@ichthyostega.de>  Thu, 13 Feb 2020 19:12:55 +0100
 
