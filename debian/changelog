@@ -1,8 +1,10 @@
-canorus (0.7.3.RC1+svn1485+dfsg-1ppa1~bionic1) bionic; urgency=low
+canorus (0.7.3.RC3+dfsg-1~buster) Lumiera-buster-tool; urgency=low
 
-  * Rebuild for Ubuntu/Bionic (18.04 LTS)
+  * New upstream version
+  * bump standards and debhelper level
+  * Build (unofficial) package for Debian/Buster(stable)
 
- -- Hermann Vosseler <deb@ichthyostega.de>  Thu, 24 May 2018 03:03:48 +0200
+ -- Hermann Vosseler <deb@ichthyostega.de>  Thu, 13 Feb 2020 19:12:55 +0100
 
 canorus (0.7.3.RC1+svn1485+dfsg-1~stretch) Lumiera-stretch-tool; urgency=low
 
